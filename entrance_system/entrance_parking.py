@@ -160,9 +160,9 @@ def draw_oled(is_entrance_allowed):
     image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
     draw = ImageDraw.Draw(image1)
     if is_entrance_allowed:
-        draw.text((8, 0), u'Entrance allowed', font=fontSmall, fill="WHITE")
+        draw.text((8, 0), u'Entrance allowed', font=fontSmall, fill="BLACK")
     else:
-        draw.text((8, 0), u'Entrance blocked', font=fontSmall, fill="WHITE")
+        draw.text((8, 0), u'Entrance blocked', font=fontSmall, fill="BLACK")
     disp.ShowImage(image1, 0, 0)
 
 
