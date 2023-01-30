@@ -93,6 +93,7 @@ def read_cards():
                 card_id = get_card_id()
                 send_info("exit_gate_open_card", card_id)
                 time.sleep(5)
+                print('Place the card close to the reader to scan.')
 
 
 def get_card_id(uid):
@@ -110,6 +111,7 @@ def disconnect_from_broker():
 def run_exit_machine():
     connect_to_broker()
     add_detect_buttons()
+    print('Place the card close to the reader to scan.')
     read_cards()
     disconnect_from_broker()
     GPIO.cleanup()
