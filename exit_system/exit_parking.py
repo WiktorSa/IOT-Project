@@ -28,11 +28,13 @@ def read_info(client, userdata, message):
     message_decoded = str(message.payload.decode("utf-8"))
 
     if message_decoded == "exit_allowed":
-        blink_green()
+        print("Exit allowed")
+        blink_blue()
         buzzer()
         stop_blink()
 
     elif message_decoded == "exit_not_allowed":
+        print("Exit denied")
         blink_red()
         buzzer()
         stop_blink()
@@ -45,7 +47,7 @@ def add_detect_buttons():
 
 def green_button_pressed_callback(channel):
     send_info("exit_gate_open_button")
-    blink_green()
+    blink_blue()
     buzzer()
     stop_blink()
 
@@ -57,6 +59,11 @@ def red_button_pressed_callback(channel):
 
 def blink_green():
     pixels.fill((0, 255, 0))
+    pixels.show()
+
+
+def blink_blue():
+    pixels.fill((0, 0, 255))
     pixels.show()
 
 
