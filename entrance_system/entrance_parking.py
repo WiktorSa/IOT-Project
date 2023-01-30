@@ -121,6 +121,7 @@ def read_cards():
                             num_dict[num] = [dt, True]
                             free_parking_places -= 1
                             print(f'Client {num} entered the parking lot.')
+                            print(f'Free places: {free_parking_places} / {total_parking_places}')
                             blink_green()
                             buzzer()
                             stop_blink()
