@@ -40,6 +40,7 @@ def read_info(client, userdata, message):
         blink_blue()
         buzzer()
         stop_blink()
+        empty_oled()
 
     elif message_decoded == "exit_not_allowed":
         print("Exit denied")
@@ -47,6 +48,7 @@ def read_info(client, userdata, message):
         blink_red()
         buzzer()
         stop_blink()
+        empty_oled()
 
 
 def init_display():
@@ -65,6 +67,7 @@ def green_button_pressed_callback(channel):
     blink_blue()
     buzzer()
     stop_blink()
+    empty_oled()
 
 
 def red_button_pressed_callback(channel):
@@ -124,9 +127,16 @@ def draw_oled(is_exit_allowed):
     image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
     draw = ImageDraw.Draw(image1)
     if is_exit_allowed:
-        draw.text((8, 0), u'Exit allowed', font=fontSmall, fill="BLACK")
+        draw.text((8, 0), u'EXIT', font=fontSmall, fill="BLACK")
+        draw.text((8, 16), u'ALLOWED', font=fontSmall, fill="BLACK")
     else:
-        draw.text((8, 0), u'Exit blocked', font=fontSmall, fill="BLACK")
+        draw.text((8, 0), u'EXIT', font=fontSmall, fill="BLACK")
+        draw.text((8, 16), u'BLOCKED', font=fontSmall, fill="BLACK")
+    disp.ShowImage(image1, 0, 0)
+
+
+def empty_oled():
+    image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
     disp.ShowImage(image1, 0, 0)
 
 
