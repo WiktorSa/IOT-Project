@@ -18,13 +18,15 @@ MIFAREReader = MFRC522()
 is_working = True
 
 num_dict = {90010080054: [datetime.now(), True]}
-total_parking_places = 10
-free_parking_places = 10
+total_parking_places = 1
+free_parking_places = 1
 
 
 def connect_to_broker():
    client.connect(broker)
-   client.subscribe("terminal2")
+   client.on_message = read_info
+   client.loop_start()
+   client.subscribe("terminal1")
 
 
 def send_info(message):
@@ -32,8 +34,8 @@ def send_info(message):
 
 
 def read_info(client, userdata, message):
-    message_decoded = list(str(message.payload.decode("utf-8")))
-
+    global free_parking_places
+    message_decoded = str(message.payload.decode("utf-8")).split(" ")
     if message_decoded[0] == "exit_gate_open_card":
         card_id = int(message_decoded[1])
         if card_id in num_dict.keys() and num_dict[card_id][1]:
@@ -56,11 +58,12 @@ def read_info(client, userdata, message):
 
 
 def add_detect_buttons():
-    GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=green_button_pressed_callback, bouncetime=200)
-    GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=red_button_pressed_callback, bouncetime=200)
+    GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=green_button_pressed_callback, bouncetime=2000)
+    GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=red_button_pressed_callback, bouncetime=2000)
     
 
 def green_button_pressed_callback(channel):
+    global free_parking_places
     if free_parking_places == 0:
         print("WARNING - all places are taken")
     else:
@@ -72,7 +75,9 @@ def green_button_pressed_callback(channel):
 
 def red_button_pressed_callback(channel):
     global is_working
+    buzzer()
     is_working = False
+    
 
 
 def blink_green():
@@ -144,14 +149,18 @@ def get_card_id(uid):
 
 
 def disconnect_from_broker():
-   client.disconnect()
+    client.loop_stop()
+    client.disconnect()
 
 
 def run_entrance_machine():
     connect_to_broker()
     add_detect_buttons()
     print('Place the card close to the reader to scan.')
-    read_cards()
+    try:
+        read_cards()
+    except KeyboardInterrupt:
+        pass
     disconnect_from_broker()
     GPIO.cleanup()
 
