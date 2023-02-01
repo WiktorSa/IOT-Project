@@ -22,11 +22,13 @@ is_working = True
 
 def connect_to_broker():
    client.connect(broker)
+   client.on_message = read_info
+   client.loop_start()
    client.subscribe("terminal1")
 
 
 def send_info(message, card_id=0):
-    client.publish("terminal2", f'{message} {card_id}')
+    client.publish("terminal1", f'{message} {card_id}')
 
 
 def read_info(client, userdata, message):
@@ -53,8 +55,8 @@ def init_display():
 
 
 def add_detect_buttons():
-    GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=green_button_pressed_callback, bouncetime=200)
-    GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=red_button_pressed_callback, bouncetime=200)
+    GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=green_button_pressed_callback, bouncetime=2000)
+    GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=red_button_pressed_callback, bouncetime=2000)
     
 
 def green_button_pressed_callback(channel):
@@ -67,6 +69,7 @@ def green_button_pressed_callback(channel):
 
 def red_button_pressed_callback(channel):
     global is_working
+    buzzer()
     is_working = False
 
 
@@ -103,9 +106,9 @@ def read_cards():
         if status == MIFAREReader.MI_OK:
             (status, uid) = MIFAREReader.MFRC522_Anticoll()
             if status == MIFAREReader.MI_OK:
-                card_id = get_card_id()
+                card_id = get_card_id(uid)
                 send_info("exit_gate_open_card", card_id)
-                time.sleep(5)
+                time.sleep(2)
                 print('Place the card close to the reader to scan.')
 
 
@@ -128,7 +131,8 @@ def draw_oled(is_exit_allowed):
 
 
 def disconnect_from_broker():
-   client.disconnect()
+    client.loop_stop()
+    client.disconnect()
 
 
 def run_exit_machine():
@@ -136,7 +140,10 @@ def run_exit_machine():
     init_display()
     add_detect_buttons()
     print('Place the card close to the reader to scan.')
-    read_cards()
+    try:
+        read_cards()
+    except KeyboardInterrupt:
+        pass
     disconnect_from_broker()
     disp.clear()
     disp.reset()
