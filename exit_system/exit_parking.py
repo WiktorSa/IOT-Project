@@ -7,10 +7,15 @@ from mfrc522 import MFRC522
 import paho.mqtt.client as mqtt
 import neopixel
 import board
+from PIL import Image, ImageDraw, ImageFont
+import lib.oled.SSD1331 as SSD1331
 
 broker = "10.108.33.124"
 client = mqtt.Client()
 pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
+disp = SSD1331.SSD1331()
+fontLarge = ImageFont.truetype('./lib/oled/Font.ttf', 20)
+fontSmall = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 MIFAREReader = MFRC522()
 is_working = True
 
@@ -31,15 +36,24 @@ def read_info(client, userdata, message):
 
     if message_decoded == "exit_allowed":
         print("Exit allowed")
+        draw_oled(True)
         blink_blue()
         buzzer()
         stop_blink()
+        empty_oled()
 
     elif message_decoded == "exit_not_allowed":
         print("Exit denied")
+        draw_oled(False)
         blink_red()
         buzzer()
         stop_blink()
+        empty_oled()
+
+
+def init_display():
+    disp.Init()
+    disp.clear()
 
 
 def add_detect_buttons():
@@ -49,9 +63,11 @@ def add_detect_buttons():
 
 def green_button_pressed_callback(channel):
     send_info("exit_gate_open_button")
+    draw_oled(True)
     blink_blue()
     buzzer()
     stop_blink()
+    empty_oled()
 
 
 def red_button_pressed_callback(channel):
@@ -107,6 +123,23 @@ def get_card_id(uid):
     return num
 
 
+def draw_oled(is_exit_allowed):
+    image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
+    draw = ImageDraw.Draw(image1)
+    if is_exit_allowed:
+        draw.text((8, 0), u'EXIT', font=fontSmall, fill="BLACK")
+        draw.text((8, 16), u'ALLOWED', font=fontSmall, fill="BLACK")
+    else:
+        draw.text((8, 0), u'EXIT', font=fontSmall, fill="BLACK")
+        draw.text((8, 16), u'BLOCKED', font=fontSmall, fill="BLACK")
+    disp.ShowImage(image1, 0, 0)
+
+
+def empty_oled():
+    image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
+    disp.ShowImage(image1, 0, 0)
+
+
 def disconnect_from_broker():
     client.loop_stop()
     client.disconnect()
@@ -114,6 +147,7 @@ def disconnect_from_broker():
 
 def run_exit_machine():
     connect_to_broker()
+    init_display()
     add_detect_buttons()
     print('Place the card close to the reader to scan.')
     try:
@@ -121,6 +155,8 @@ def run_exit_machine():
     except KeyboardInterrupt:
         pass
     disconnect_from_broker()
+    disp.clear()
+    disp.reset()
     GPIO.cleanup()
 
 

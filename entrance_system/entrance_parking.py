@@ -10,10 +10,15 @@ from datetime import datetime
 import paho.mqtt.client as mqtt
 import neopixel
 import board
+from PIL import Image, ImageDraw, ImageFont
+import lib.oled.SSD1331 as SSD1331
 
 broker = "10.108.33.124"
 client = mqtt.Client()
 pixels = neopixel.NeoPixel(board.D18, 8, brightness=1.0/32, auto_write=False)
+disp = SSD1331.SSD1331()
+fontLarge = ImageFont.truetype('./lib/oled/Font.ttf', 20)
+fontSmall = ImageFont.truetype('./lib/oled/Font.ttf', 13)
 MIFAREReader = MFRC522()
 is_working = True
 
@@ -57,6 +62,11 @@ def read_info(client, userdata, message):
             free_parking_places += 1
 
 
+def init_display():
+    disp.Init()
+    disp.clear()
+
+
 def add_detect_buttons():
     GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=green_button_pressed_callback, bouncetime=2000)
     GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=red_button_pressed_callback, bouncetime=2000)
@@ -68,6 +78,7 @@ def green_button_pressed_callback(channel):
         print("WARNING - all places are taken")
     else:
         free_parking_places -= 1
+    draw_oled(True)
     blink_green()
     buzzer()
     stop_blink()
@@ -117,6 +128,7 @@ def read_cards():
                   
                     print(f"Card read UID: {num}")
                     if num_dict.get(num) and num_dict[num][1]:
+                        draw_oled(False)
                         blink_red()
                         buzzer()
                         stop_blink()
@@ -127,11 +139,13 @@ def read_cards():
                             free_parking_places -= 1
                             print(f'Client {num} entered the parking lot.')
                             print(f'Free places: {free_parking_places} / {total_parking_places}')
+                            draw_oled(True)
                             blink_green()
                             buzzer()
                             stop_blink()
                         else:
                             print('Sorry, there are no free parking places.')
+                            draw_oled(False)
                             blink_red()
                             buzzer()
                             stop_blink()
@@ -148,6 +162,16 @@ def get_card_id(uid):
     return num
 
 
+def draw_oled(is_entrance_allowed):
+    image1 = Image.new("RGB", (disp.width, disp.height), "WHITE")
+    draw = ImageDraw.Draw(image1)
+    if is_entrance_allowed:
+        draw.text((8, 0), u'Entrance allowed', font=fontSmall, fill="BLACK")
+    else:
+        draw.text((8, 0), u'Entrance blocked', font=fontSmall, fill="BLACK")
+    disp.ShowImage(image1, 0, 0)
+
+
 def disconnect_from_broker():
     client.loop_stop()
     client.disconnect()
@@ -155,6 +179,7 @@ def disconnect_from_broker():
 
 def run_entrance_machine():
     connect_to_broker()
+    init_display()
     add_detect_buttons()
     print('Place the card close to the reader to scan.')
     try:
@@ -162,6 +187,8 @@ def run_entrance_machine():
     except KeyboardInterrupt:
         pass
     disconnect_from_broker()
+    disp.clear()
+    disp.reset()
     GPIO.cleanup()
 
 
